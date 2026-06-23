@@ -473,25 +473,27 @@
                 if (item.isNote) noteIndices.push(index);
             });
 
-            // === BẮT ĐẦU PHẦN ĐÃ THAY ĐỔI THEO QUY TẮC MỚI ===
+            // === BẮT ĐẦU PHẦN ĐÃ THAY ĐỔI ĐỂ CÓ NHIỀU MÀU && ĐẬM DẦN LÊN ===
             for (let i = 0; i < noteIndices.length; i++) {
                 const currIdx = noteIndices[i];
                 const curr = parsedData[currIdx];
                 
                 // Nốt c (thấp nhất) có absVal = 36
                 // Nốt B. (cao nhất) có absVal = 71
-                // Chặn giới hạn để tính tỷ lệ chính xác từ 36 đến 71
                 let clampedVal = Math.max(36, Math.min(71, curr.absVal));
                 
                 // Tính hệ số factor từ 0 đến 1 
-                // (c sẽ là 0, C ở giữa sẽ là ~0.34, B. sẽ là 1)
                 let factor = (clampedVal - 36) / (71 - 36);
                 
-                // Dùng hệ màu HSL: Hue = 210 (Màu xanh lam)
-                // Lightness (độ sáng) thay đổi từ 80% (nhạt) xuống 20% (đậm đen)
-                let lightness = 80 - (factor * 60);
+                // 1. Dải màu Hue thay đổi từ 0 (Đỏ) đến khoảng 300 (Hồng tím)
+                // Các nốt cạnh nhau sẽ có hệ màu sắc khác biệt hoàn toàn
+                let hue = Math.floor(factor * 300);
                 
-                curr.color = `hsl(210, 100%, ${lightness}%)`;
+                // 2. Độ sáng Lightness giảm dần từ 70% xuống 30% 
+                // Thỏa mãn yêu cầu "đậm dần lên" từ quãng thấp đến cao
+                let lightness = 70 - (factor * 40);
+                
+                curr.color = `hsl(${hue}, 100%, ${lightness}%)`;
             }
             // === KẾT THÚC PHẦN THAY ĐỔI ===
 
@@ -520,28 +522,24 @@
         }
 
         function downloadImage() {
-            // Lấy thông tin bài hát
             const songTitleInput = document.getElementById('song-title').value.trim();
             const displayTitle = songTitleInput || "Bản Nhạc Chưa Đặt Tên";
             const defaultFilename = songTitleInput ? songTitleInput.replace(/\s+/g, '_') : "Ban_Nhac";
             
-            // Hỏi tên file
             const filename = prompt("Nhập tên tệp bạn muốn lưu:", defaultFilename);
             if (!filename) return;
 
-            // TẠO MỘT KHUNG ẢNH ẨN ĐỂ CHỨA TOÀN BỘ DỮ LIỆU CẦN CHỤP
             const exportDiv = document.createElement('div');
             exportDiv.style.position = 'absolute';
             exportDiv.style.top = '0';
             exportDiv.style.left = '0';
-            exportDiv.style.zIndex = '-9999'; // Đẩy ra sau cùng để không che giao diện
-            exportDiv.style.width = '800px';  // Rộng vừa phải để chữ hiển thị đẹp
+            exportDiv.style.zIndex = '-9999'; 
+            exportDiv.style.width = '800px';  
             exportDiv.style.backgroundColor = '#f8f9fa';
             exportDiv.style.padding = '40px';
             exportDiv.style.boxSizing = 'border-box';
             exportDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
-            // 1. Thêm Tiêu đề bài hát
             const titleEl = document.createElement('h2');
             titleEl.style.textAlign = 'center';
             titleEl.style.color = '#2c3e50';
@@ -550,7 +548,6 @@
             titleEl.textContent = displayTitle;
             exportDiv.appendChild(titleEl);
 
-            // 2. Thêm Thông tin Tone (Nguồn & Đích)
             const tonesEl = document.createElement('p');
             tonesEl.style.textAlign = 'center';
             tonesEl.style.color = '#7f8c8d';
@@ -561,31 +558,27 @@
             tonesEl.innerHTML = `Tone gốc: <strong>${srcTone}</strong> &nbsp;&nbsp;➡️&nbsp;&nbsp; Tone đích: <strong style="color: #e74c3c;">${tgtTone}</strong>`;
             exportDiv.appendChild(tonesEl);
 
-            // 3. Thêm toàn bộ nốt nhạc (Dùng lại HTML màu sắc đã render)
             const notesEl = document.createElement('div');
-            notesEl.style.whiteSpace = 'pre-wrap'; // Đảm bảo xuống dòng đúng như nhập
+            notesEl.style.whiteSpace = 'pre-wrap'; 
             notesEl.style.fontFamily = "'Courier New', Courier, monospace";
-            notesEl.style.fontSize = '1.4em'; // Chữ to hơn cho dễ nhìn trên điện thoại/máy tính
+            notesEl.style.fontSize = '1.4em'; 
             notesEl.style.lineHeight = '1.8';
             notesEl.style.fontWeight = 'bold';
             notesEl.style.color = '#333';
             notesEl.innerHTML = document.getElementById('output-text').innerHTML;
             exportDiv.appendChild(notesEl);
 
-            // Thêm vào Body để render (sẽ bị ẩn phía sau do zIndex)
             document.body.appendChild(exportDiv);
 
-            // Chụp khung ảnh ẩn
             html2canvas(exportDiv, {
                 backgroundColor: "#f8f9fa",
-                scale: 2 // Tăng gấp đôi độ phân giải ảnh để nét hơn
+                scale: 2 
             }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = filename + '.png';
                 link.href = canvas.toDataURL("image/png");
                 link.click();
 
-                // Xóa khung tạm thời sau khi đã chụp và tải xong
                 document.body.removeChild(exportDiv);
             });
         }
