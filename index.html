@@ -468,34 +468,47 @@
                 return { isNote: false, text: token, original: token };
             });
 
+            // === THUẬT TOÁN ĐỘNG: QUÉT VÀ THỐNG KÊ CÁC NỐT XUẤT HIỆN ===
             const noteIndices = [];
+            const uniqueNotesSet = new Set();
+
             parsedData.forEach((item, index) => {
-                if (item.isNote) noteIndices.push(index);
+                if (item.isNote) {
+                    noteIndices.push(index);
+                    uniqueNotesSet.add(item.absVal); // Lưu các cao độ độc lập vào Set
+                }
             });
 
-            // === BẮT ĐẦU PHẦN ĐÃ THAY ĐỔI ĐỂ CÓ NHIỀU MÀU && ĐẬM DẦN LÊN ===
+            // Chuyển Set thành mảng và sắp xếp từ thấp đến cao
+            const sortedUniqueNotes = Array.from(uniqueNotesSet).sort((a, b) => a - b);
+            const totalUnique = sortedUniqueNotes.length;
+
+            // Tạo một bảng màu (Dictionary) ánh xạ từ "Cao độ" -> "Màu tương ứng"
+            const colorMap = {};
+            sortedUniqueNotes.forEach((absVal, index) => {
+                let factor = 0;
+                // Nếu bài hát có nhiều hơn 1 nốt, tính factor phân bổ đều từ 0 đến 1
+                if (totalUnique > 1) {
+                    factor = index / (totalUnique - 1);
+                }
+
+                // Tính toán màu sắc dựa trên vị trí của nốt (thấp -> cao)
+                // Hue: Phân bổ từ 0 (Đỏ) đến 330 (Hồng tím)
+                let hue = Math.floor(factor * 330);
+                
+                // Lightness: Nốt thấp nhất (index 0) sáng 65%, nốt cao nhất (index cuối) tối 35%
+                let lightness = 65 - (factor * 30);
+
+                colorMap[absVal] = `hsl(${hue}, 95%, ${lightness}%)`;
+            });
+
+            // Gán màu đã tính toán lại cho các nốt hiển thị
             for (let i = 0; i < noteIndices.length; i++) {
                 const currIdx = noteIndices[i];
                 const curr = parsedData[currIdx];
-                
-                // Nốt c (thấp nhất) có absVal = 36
-                // Nốt B. (cao nhất) có absVal = 71
-                let clampedVal = Math.max(36, Math.min(71, curr.absVal));
-                
-                // Tính hệ số factor từ 0 đến 1 
-                let factor = (clampedVal - 36) / (71 - 36);
-                
-                // 1. Dải màu Hue thay đổi từ 0 (Đỏ) đến khoảng 300 (Hồng tím)
-                // Các nốt cạnh nhau sẽ có hệ màu sắc khác biệt hoàn toàn
-                let hue = Math.floor(factor * 300);
-                
-                // 2. Độ sáng Lightness giảm dần từ 70% xuống 30% 
-                // Thỏa mãn yêu cầu "đậm dần lên" từ quãng thấp đến cao
-                let lightness = 70 - (factor * 40);
-                
-                curr.color = `hsl(${hue}, 100%, ${lightness}%)`;
+                curr.color = colorMap[curr.absVal]; 
             }
-            // === KẾT THÚC PHẦN THAY ĐỔI ===
+            // === KẾT THÚC THUẬT TOÁN ĐỘNG ===
 
             const transposedTokens = parsedData.map(item => {
                 if (item.isNote) {
