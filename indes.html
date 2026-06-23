@@ -1,0 +1,610 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phần Mềm Chuyển Tone (Transpose) Trực Tuyến & Tham Khảo Hợp Âm</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
+        p.subtitle { color: #7f8c8d; text-align: center; margin-bottom: 30px; }
+
+        .main-container {
+            display: flex;
+            flex-direction: column; 
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        /* === PHẦN THÔNG TIN & ẢNH THAM KHẢO === */
+        .info-image-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .info-image-section h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.2em; color: #2c3e50; }
+        .info-image-section p { color: #666; margin-bottom: 20px; line-height: 1.6; font-size: 0.95em; }
+        .reference-image { max-width: 600px; width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+        /* === BỐ CỤC CÔNG CỤ CHUYỂN TONE === */
+        .transposer-interface {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+        }
+
+        /* Khu vực Vòng tròn */
+        .circle-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .circle-section h2 { margin-top: 0; font-size: 1.2em; color: #34495e; }
+        
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background-color: #fdfdfd;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        .tone-btn {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            user-select: none;
+            z-index: 5;
+        }
+        .tone-btn:hover { transform: scale(1.1); z-index: 10; }
+        .major-btn { font-size: 0.9em; color: #fff; text-shadow: 1px 1px 1px rgba(0,0,0,0.3); }
+        .minor-btn { font-size: 0.8em; color: #333; }
+        .tone-btn.selected { transform: scale(1.25); border: 3px solid #2c3e50; box-shadow: 0 0 15px rgba(44, 62, 80, 0.4); z-index: 20; }
+
+        /* Khu vực Nhập/Xuất văn bản */
+        .text-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+            min-width: 300px;
+        }
+        .text-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+            position: relative;
+        }
+        .text-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.1em; color: #2c3e50; }
+        
+        .song-title-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .song-title-input:focus { border-color: #3498db; }
+
+        textarea, .output-div {
+            width: 100%;
+            height: 140px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1em;
+            font-weight: bold;
+            box-sizing: border-box;
+            outline: none;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+        }
+        textarea { resize: vertical; transition: border-color 0.2s; }
+        textarea:focus { border-color: #3498db; }
+        
+        .output-div {
+            overflow-y: auto;
+            white-space: pre-wrap; 
+            padding-bottom: 50px; 
+        }
+        
+        /* === BẢNG CHỌN 21 NỐT === */
+        #note-board-wrapper {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+            display: none; 
+            flex-direction: column;
+            gap: 10px;
+        }
+        #note-board-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%; 
+        }
+        .note-row {
+            display: grid;
+            grid-template-columns: 60px repeat(7, 1fr);
+            gap: 5px; 
+            align-items: center;
+            width: 100%;
+        }
+        .note-row-label { font-size: 0.85em; color: #7f8c8d; font-weight: bold; }
+        .note-cell {
+            background: #f1f2f6;
+            border: 1px solid #ced6e0;
+            padding: 8px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #2f3542;
+            transition: all 0.2s;
+            user-select: none;
+            text-align: center;
+            font-size: 0.9em; 
+        }
+        .note-cell:hover {
+            background: #7bed9f;
+            border-color: #2ed573;
+            color: #2c3e50;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .note-cell:active { transform: translateY(0); }
+
+        .action-btns {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .copy-btn, .img-btn {
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+        .copy-btn { background-color: #2ecc71; }
+        .copy-btn:hover { background-color: #27ae60; }
+        
+        .img-btn { background-color: #3498db; }
+        .img-btn:hover { background-color: #2980b9; }
+
+        @media (max-width: 768px) {
+            .transposer-interface { flex-direction: column; align-items: center; }
+            .text-section { width: 100%; }
+        }
+        @media (max-width: 480px) {
+            .note-row { grid-template-columns: 45px repeat(7, 1fr); gap: 3px; }
+            .note-row-label { font-size: 0.7em; }
+            .note-cell { font-size: 0.75em; padding: 6px 0; border-radius: 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Phần Mềm Chuyển Tone & Tham Khảo Hợp Âm</h1>
+    <p class="subtitle">Click vào Tone Gốc để lấy bảng 21 nốt, sau đó click chọn nốt để ghép thành giai điệu</p>
+
+    <div class="main-container">
+
+        <div class="info-image-section">
+            <h3>Vòng Tròn Hợp Âm Tham Khảo</h3>
+            <p>Sử dụng biểu đồ này làm cảm hứng để tạo giai điệu. Phần mềm bên dưới sẽ hỗ trợ bạn dịch giọng tự động.</p>
+            <img src="vongtron_hopam.jpg" alt="Vòng tròn hợp âm tham khảo trực quan" class="reference-image">
+        </div>
+
+        <div class="transposer-interface">
+            <div class="circle-section">
+                <h2>1. Chọn Tone Gốc</h2>
+                <div id="source-wheel" class="wheel-container"></div>
+            </div>
+
+            <div class="text-section">
+                <div class="text-box">
+                    <h3>Tên bài hát (hiển thị trên ảnh tải về)</h3>
+                    <input type="text" id="song-title" class="song-title-input" placeholder="Ví dụ: Lòng Mẹ, Bụi Phấn...">
+
+                    <h3>Nhập nốt nhạc</h3>
+                    <textarea id="input-text" placeholder="Gõ trực tiếp hoặc dùng bảng nốt bên dưới..."></textarea>
+                    
+                    <div id="note-board-wrapper">
+                        <h4 style="margin: 0; color: #34495e; font-size: 0.95em;">Bảng nốt Tone <strong id="current-tone-label" style="color: #e74c3c;">...</strong> (Click để nhập):</h4>
+                        <div id="note-board-container"></div>
+                    </div>
+                </div>
+                
+                <div class="text-box result-area">
+                    <h3>Kết quả Tone Đích</h3>
+                    <div id="output-text" class="output-div"></div>
+                    <div class="action-btns" id="action-buttons-group">
+                        <button class="copy-btn" onclick="copyResult()">Sao chép</button>
+                        <button class="img-btn" onclick="downloadImage()">Tạo ảnh</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="circle-section">
+                <h2>2. Chọn Tone Đích</h2>
+                <div id="target-wheel" class="wheel-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const keysData = {
+            "C": {val: 0, col: "#FF0000"}, "G": {val: 7, col: "#FF5500"}, "D": {val: 2, col: "#FF9900"},
+            "A": {val: 9, col: "#FFCC00"}, "E": {val: 4, col: "#FFFF00"}, "B": {val: 11, col: "#88FF00"},
+            "F#":{val: 6, col: "#00FF00"}, "Db":{val: 1, col: "#00CCCC"}, "Ab":{val: 8, col: "#0000FF"},
+            "Eb":{val: 3, col: "#4400CC"}, "Bb":{val: 10, col: "#880088"}, "F": {val: 5, col: "#FF00FF"},
+            
+            "Am": {val: 9, col: "#FFCC99"}, "Em": {val: 4, col: "#FFFF99"}, "Bm": {val: 11, col: "#CCFF99"},
+            "F#m":{val: 6, col: "#99FF99"}, "C#m":{val: 1, col: "#99FFFF"}, "G#m":{val: 8, col: "#99CCFF"},
+            "D#m":{val: 3, col: "#9999FF"}, "Bbm":{val: 10, col: "#CC99FF"}, "Fm": {val: 5, col: "#FF99FF"},
+            "Cm": {val: 0, col: "#FF99CC"}, "Gm": {val: 7, col: "#FF9999"}, "Dm": {val: 2, col: "#FFB366"}
+        };
+
+        const scalesDict = {
+            "C": "C D E F G A B", "G": "G A B C D E F#", "D": "D E F# G A B C#",
+            "A": "A B C# D E F# G#", "E": "E F# G# A B C# D#", "B": "B C# D# E F# G# A#",
+            "F#": "F# G# A# B C# D# E#", "Db": "Db Eb F Gb Ab Bb C", "Ab": "Ab Bb C Db Eb F G",
+            "Eb": "Eb F G Ab Bb C D", "Bb": "Bb C D Eb F G A", "F": "F G A Bb C D E",
+            "Am": "A B C D E F G", "Em": "E F# G A B C D", "Bm": "B C# D E F# G A",
+            "F#m": "F# G# A B C# D E", "C#m": "C# D# E F# G# A B", "G#m": "G# A# B C# D# E F#",
+            "D#m": "D# E# F# G# A# B C#", "Bbm": "Bb C Db Eb F Gb Ab", "Fm": "F G Ab Bb C Db Eb",
+            "Cm": "C D Eb F G Ab Bb", "Gm": "G A Bb C D Eb F", "Dm": "D E F G A Bb C"
+        };
+
+        const majorKeys = ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"];
+        const minorKeys = ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "Bbm", "Fm", "Cm", "Gm", "Dm"];
+
+        const noteToVal = {
+            "C":0, "C#":1, "DB":1, "D":2, "D#":3, "EB":3, "E":4, "F":5, 
+            "F#":6, "GB":6, "G":7, "G#":8, "AB":8, "A":9, "A#":10, "BB":10, "B":11
+        };
+
+        const sharps = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const flats  = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const flatKeys = ["F", "Bb", "Eb", "Ab", "Db", "Dm", "Gm", "Cm", "Fm", "Bbm"];
+
+        let state = { source: null, target: "C" };
+
+        function renderNoteBoard(key) {
+            const wrapper = document.getElementById('note-board-wrapper');
+            const container = document.getElementById('note-board-container');
+            const label = document.getElementById('current-tone-label');
+            const inputText = document.getElementById('input-text');
+            
+            wrapper.style.display = 'flex';
+            label.textContent = key;
+            container.innerHTML = '';
+
+            const baseNotes = scalesDict[key].split(' ');
+            
+            const octaveSettings = [
+                { name: "Thấp", transform: note => note.toLowerCase() },
+                { name: "Trung", transform: note => note },
+                { name: "Cao", transform: note => note + "." }
+            ];
+            
+            octaveSettings.forEach(setting => {
+                const row = document.createElement('div');
+                row.className = 'note-row';
+                
+                const rowLabel = document.createElement('div');
+                rowLabel.className = 'note-row-label';
+                rowLabel.textContent = setting.name;
+                row.appendChild(rowLabel);
+
+                baseNotes.forEach(n => {
+                    const btn = document.createElement('div');
+                    btn.className = 'note-cell';
+                    btn.textContent = setting.transform(n); 
+                    
+                    btn.onclick = () => {
+                        let currentVal = inputText.value;
+                        if (currentVal.length > 0 && !currentVal.endsWith(' ') && !currentVal.endsWith('\n')) {
+                            inputText.value += ' ';
+                        }
+                        inputText.value += btn.textContent + ' ';
+                        processTranspose();
+                        inputText.focus();
+                    };
+                    
+                    row.appendChild(btn);
+                });
+                container.appendChild(row);
+            });
+        }
+
+        function drawWheel(containerId, isSource) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            const radiusMajor = 115, radiusMinor = 70;
+            const centerX = 150, centerY = 150;
+
+            function createBtns(keys, radius, btnClass) {
+                const angleStep = (2 * Math.PI) / keys.length;
+                keys.forEach((key, i) => {
+                    const angle = i * angleStep - (Math.PI / 2);
+                    const btn = document.createElement('div');
+                    btn.className = `tone-btn ${btnClass}`;
+                    btn.textContent = key;
+                    btn.style.left = `${centerX + radius * Math.cos(angle) - 20}px`;
+                    btn.style.top = `${centerY + radius * Math.sin(angle) - 20}px`;
+                    btn.style.backgroundColor = keysData[key].col;
+                    
+                    if (!isSource && key === state.target) {
+                        btn.classList.add('selected');
+                    }
+
+                    btn.onclick = () => {
+                        container.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        
+                        if (isSource) {
+                            state.source = key;
+                            renderNoteBoard(key);
+                        } else {
+                            state.target = key;
+                        }
+                        
+                        if(state.source && state.target) {
+                            processTranspose(); 
+                        }
+                    };
+                    container.appendChild(btn);
+                });
+            }
+            createBtns(majorKeys, radiusMajor, 'major-btn');
+            createBtns(minorKeys, radiusMinor, 'minor-btn');
+        }
+
+        function processTranspose() {
+            const inputTxt = document.getElementById('input-text').value;
+            if (!inputTxt.trim() || !state.source || !state.target) {
+                document.getElementById('output-text').innerHTML = '';
+                return;
+            }
+
+            const srcVal = keysData[state.source].val;
+            const tgtVal = keysData[state.target].val;
+            
+            let interval = tgtVal - srcVal;
+            if (interval > 6) interval -= 12;
+            if (interval < -6) interval += 12;
+
+            const targetNoteSet = flatKeys.includes(state.target) ? flats : sharps;
+            const tokens = inputTxt.split(/(\s+)/);
+            
+            const parsedData = tokens.map(token => {
+                const match = token.match(/^([a-zA-Z][#bB]?)(['\.]*)$/);
+                
+                if (match) {
+                    const notePart = match[1];
+                    const symbolPart = match[2];
+                    const cleanNote = notePart.toUpperCase();
+                    
+                    if (noteToVal[cleanNote] !== undefined) {
+                        const baseVal = noteToVal[cleanNote];
+                        
+                        let octave = 4;
+                        if (notePart === notePart.toLowerCase()) {
+                            octave = 3;
+                        } else if (symbolPart.length > 0) {
+                            octave = 4 + symbolPart.length;
+                        }
+                        
+                        const absoluteVal = octave * 12 + baseVal;
+                        const newAbsoluteVal = absoluteVal + interval;
+                        
+                        const newOctave = Math.floor(newAbsoluteVal / 12);
+                        let newBaseVal = newAbsoluteVal % 12;
+                        if (newBaseVal < 0) newBaseVal += 12; 
+                        
+                        let newNoteStr = targetNoteSet[newBaseVal];
+                        
+                        let finalString = "";
+                        if (newOctave <= 3) {
+                            finalString = newNoteStr.toLowerCase();
+                        } else if (newOctave === 4) {
+                            finalString = newNoteStr; 
+                        } else {
+                            finalString = newNoteStr + ".".repeat(newOctave - 4);
+                        }
+                        
+                        return { isNote: true, text: finalString, absVal: newAbsoluteVal, original: token };
+                    }
+                }
+                return { isNote: false, text: token, original: token };
+            });
+
+            const noteIndices = [];
+            parsedData.forEach((item, index) => {
+                if (item.isNote) noteIndices.push(index);
+            });
+
+            for (let i = 0; i < noteIndices.length; i++) {
+                const currIdx = noteIndices[i];
+                const curr = parsedData[currIdx];
+                
+                const prev = i > 0 ? parsedData[noteIndices[i-1]] : null;
+                const next = i < noteIndices.length - 1 ? parsedData[noteIndices[i+1]] : null;
+
+                let isRed = false;
+                let isGreen = false;
+
+                if (prev) {
+                    const diff = Math.abs(curr.absVal - prev.absVal);
+                    if (diff === 0) isRed = true;
+                    else if (diff === 1 || diff === 2) isGreen = true;
+                }
+                
+                if (next) {
+                    const diff = Math.abs(curr.absVal - next.absVal);
+                    if (diff === 0) isRed = true;
+                    else if (diff === 1 || diff === 2) isGreen = true;
+                }
+
+                if (isRed) {
+                    curr.color = "#e74c3c"; 
+                } else if (isGreen) {
+                    curr.color = "#2ecc71"; 
+                } else {
+                    curr.color = "#2c3e50"; 
+                }
+            }
+
+            const transposedTokens = parsedData.map(item => {
+                if (item.isNote) {
+                    return `<span style="color: ${item.color}; font-weight: bold;">${item.text}</span>`;
+                }
+                return item.text; 
+            });
+
+            document.getElementById('output-text').innerHTML = transposedTokens.join('');
+        }
+
+        function copyResult() {
+            const textToCopy = document.getElementById('output-text').innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = "Đã chép!";
+                btn.style.backgroundColor = "#2980b9";
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.backgroundColor = "#2ecc71";
+                }, 2000);
+            });
+        }
+
+        function downloadImage() {
+            // Lấy thông tin bài hát
+            const songTitleInput = document.getElementById('song-title').value.trim();
+            const displayTitle = songTitleInput || "Bản Nhạc Chưa Đặt Tên";
+            const defaultFilename = songTitleInput ? songTitleInput.replace(/\s+/g, '_') : "Ban_Nhac";
+            
+            // Hỏi tên file
+            const filename = prompt("Nhập tên tệp bạn muốn lưu:", defaultFilename);
+            if (!filename) return;
+
+            // TẠO MỘT KHUNG ẢNH ẨN ĐỂ CHỨA TOÀN BỘ DỮ LIỆU CẦN CHỤP
+            const exportDiv = document.createElement('div');
+            exportDiv.style.position = 'absolute';
+            exportDiv.style.top = '0';
+            exportDiv.style.left = '0';
+            exportDiv.style.zIndex = '-9999'; // Đẩy ra sau cùng để không che giao diện
+            exportDiv.style.width = '800px';  // Rộng vừa phải để chữ hiển thị đẹp
+            exportDiv.style.backgroundColor = '#f8f9fa';
+            exportDiv.style.padding = '40px';
+            exportDiv.style.boxSizing = 'border-box';
+            exportDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+
+            // 1. Thêm Tiêu đề bài hát
+            const titleEl = document.createElement('h2');
+            titleEl.style.textAlign = 'center';
+            titleEl.style.color = '#2c3e50';
+            titleEl.style.margin = '0 0 10px 0';
+            titleEl.style.fontSize = '2.2em';
+            titleEl.textContent = displayTitle;
+            exportDiv.appendChild(titleEl);
+
+            // 2. Thêm Thông tin Tone (Nguồn & Đích)
+            const tonesEl = document.createElement('p');
+            tonesEl.style.textAlign = 'center';
+            tonesEl.style.color = '#7f8c8d';
+            tonesEl.style.margin = '0 0 30px 0';
+            tonesEl.style.fontSize = '1.2em';
+            const srcTone = state.source || "Chưa chọn";
+            const tgtTone = state.target || "C";
+            tonesEl.innerHTML = `Tone gốc: <strong>${srcTone}</strong> &nbsp;&nbsp;➡️&nbsp;&nbsp; Tone đích: <strong style="color: #e74c3c;">${tgtTone}</strong>`;
+            exportDiv.appendChild(tonesEl);
+
+            // 3. Thêm toàn bộ nốt nhạc (Dùng lại HTML màu sắc đã render)
+            const notesEl = document.createElement('div');
+            notesEl.style.whiteSpace = 'pre-wrap'; // Đảm bảo xuống dòng đúng như nhập
+            notesEl.style.fontFamily = "'Courier New', Courier, monospace";
+            notesEl.style.fontSize = '1.4em'; // Chữ to hơn cho dễ nhìn trên điện thoại/máy tính
+            notesEl.style.lineHeight = '1.8';
+            notesEl.style.fontWeight = 'bold';
+            notesEl.style.color = '#333';
+            notesEl.innerHTML = document.getElementById('output-text').innerHTML;
+            exportDiv.appendChild(notesEl);
+
+            // Thêm vào Body để render (sẽ bị ẩn phía sau do zIndex)
+            document.body.appendChild(exportDiv);
+
+            // Chụp khung ảnh ẩn
+            html2canvas(exportDiv, {
+                backgroundColor: "#f8f9fa",
+                scale: 2 // Tăng gấp đôi độ phân giải ảnh để nét hơn
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = filename + '.png';
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+
+                // Xóa khung tạm thời sau khi đã chụp và tải xong
+                document.body.removeChild(exportDiv);
+            });
+        }
+
+        window.onload = () => {
+            drawWheel('source-wheel', true);
+            drawWheel('target-wheel', false);
+            document.getElementById('input-text').addEventListener('input', processTranspose);
+        };
+    </script>
+</body>
+</html>
